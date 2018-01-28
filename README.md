@@ -18,9 +18,9 @@ Code from the generator requires the following libraries:
 - [Werkzeug](http://werkzeug.pocoo.org/) - used for WSGI request parsing.
 - [enum34](https://pypi.python.org/pypi/enum34) - for python3.3 or earlier, including python 2.x
 
-Additionally in order to use the resulting applicaiton,  you'll need a
-standalone WSGI capable server (such as gunicorn or uwsgi) or a library capable
-of acting as a server (like bjoern, gevent, or werkzeug's internal debugging
+Additionally in order to use the resulting applicaiton,  you'll need a WSGI
+capable server (such as gunicorn or uwsgi) or a library capable of acting as a
+standalone server (like bjoern, gevent, or werkzeug's internal debugging
 server).
 
 ## Usage
@@ -37,7 +37,7 @@ import random
 
 import bjoern
 import haberdasher_pb2 as pb
-from haberdasher_pb2_twirp import (Errors, HaberdasherImpl, HaberdasherServer,
+from haberdasher_twirp_srv import (Errors, HaberdasherImpl, HaberdasherServer,
 								   TwirpException)
 
 class MadHaberdasher(HaberdasherImpl):
