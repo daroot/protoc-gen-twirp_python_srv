@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
-	"html/template"
 	"path"
 	"strings"
+	"text/template"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
