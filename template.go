@@ -2,14 +2,19 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"unicode"
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+
+	"github.com/daroot/protoc-gen-twirp_python_srv/typemap"
 )
 
 type pythonSrvTemplatePresenter struct {
-	proto *descriptor.FileDescriptorProto
+	proto   *descriptor.FileDescriptorProto
+	srcInfo *descriptor.SourceCodeInfo
+	reg     *typemap.Registry
 
 	Version        string
 	Package        string
@@ -21,8 +26,10 @@ func (p *pythonSrvTemplatePresenter) Services() []*tmplService {
 
 	for i, svc := range p.proto.GetService() {
 		services[i] = &tmplService{
-			proto: svc,
-			pkg:   p.proto.GetPackage(),
+			reg:       p.reg,
+			fileProto: p.proto,
+			proto:     svc,
+			pkg:       p.proto.GetPackage(),
 		}
 	}
 
@@ -30,8 +37,11 @@ func (p *pythonSrvTemplatePresenter) Services() []*tmplService {
 }
 
 type tmplService struct {
-	proto *descriptor.ServiceDescriptorProto
-	pkg   string
+	fileProto *descriptor.FileDescriptorProto
+	proto     *descriptor.ServiceDescriptorProto
+	reg       *typemap.Registry
+
+	pkg string
 }
 
 func (svc *tmplService) Name() string {
@@ -58,12 +68,28 @@ func (svc *tmplService) PackageName() string {
 	return svc.pkg
 }
 
+func (svc *tmplService) ServiceComments(prefix string) string {
+	comments, err := svc.reg.ServiceComments(svc.fileProto, svc.proto)
+	lines := make([]string, 0)
+	if err == nil && comments.Leading != "" {
+		text := strings.TrimSuffix(comments.Leading, "\n")
+		for _, line := range strings.Split(text, "\n") {
+			lines = append(lines, fmt.Sprintf("%s%s", prefix, strings.TrimPrefix(line, " ")))
+		}
+		return strings.Join(lines, "\n")
+	}
+	return ""
+}
+
 func (svc *tmplService) Methods() []*tmplMethod {
 	methods := make([]*tmplMethod, len(svc.proto.GetMethod()))
 
 	for i, proto := range svc.proto.GetMethod() {
 		methods[i] = &tmplMethod{
-			proto: proto,
+			reg:       svc.reg,
+			fileProto: svc.fileProto,
+			svcProto:  svc.proto,
+			proto:     proto,
 		}
 	}
 
@@ -71,7 +97,10 @@ func (svc *tmplService) Methods() []*tmplMethod {
 }
 
 type tmplMethod struct {
-	proto *descriptor.MethodDescriptorProto
+	reg       *typemap.Registry
+	fileProto *descriptor.FileDescriptorProto
+	svcProto  *descriptor.ServiceDescriptorProto
+	proto     *descriptor.MethodDescriptorProto
 }
 
 func (m *tmplMethod) Name() string {
@@ -92,6 +121,19 @@ func (m *tmplMethod) InputType() string {
 
 func (m *tmplMethod) OutputType() string {
 	return strings.TrimPrefix(m.proto.GetOutputType(), ".")
+}
+
+func (m *tmplMethod) MethodComments(prefix string) string {
+	comments, err := m.reg.MethodComments(m.fileProto, m.svcProto, m.proto)
+	lines := make([]string, 0)
+	if err == nil && comments.Leading != "" {
+		text := strings.TrimSuffix(comments.Leading, "\n")
+		for _, line := range strings.Split(text, "\n") {
+			lines = append(lines, fmt.Sprintf("%s%s", prefix, strings.TrimPrefix(line, " ")))
+		}
+		return strings.Join(lines, "\n")
+	}
+	return ""
 }
 
 // camelize converts snake_case to CamelCase
@@ -372,8 +414,20 @@ class TwirpWSGIApp(object):
 
 
 {{ range .Services -}}
-class {{ .CamelName }}Impl(object): {{- range .Methods }}
+class {{ .CamelName }}Impl(object):{{- $comments := (.ServiceComments "    ") -}}
+	{{- if (ne $comments "") }}
+	"""
+{{ $comments }}
+    """
+	{{- end -}}
+{{- range .Methods }}
     def {{ .Name }}(self, {{ .InputArg }}):
+		{{- $comments := (.MethodComments "        ") -}}
+	    {{- if (ne $comments "") }}
+        """
+{{ $comments }}
+        """
+        {{- end }}
         raise TwirpException(Errors.Unimplemented, "{{ .Name }} is unimplemented")
 {{ end }}
 
@@ -382,8 +436,8 @@ class {{ .CamelName }}Server(TwirpWSGIApp):
         """Creates a new WSGI app for the {{ .Name }} service.
 
         Args:
-            service: An object with methods matching the protocol of 
-            {{ .CamelName }}Impl, which implements the service logic. 
+            service: An object with methods matching the protocol of
+                {{ .CamelName }}Impl, which implements the service logic.
             hooks: Optional object implementing any of the request
                 lifecycle hooks protocol methods.
         """

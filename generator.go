@@ -47,7 +47,8 @@ func (g *generator) generateFile(file *descriptor.FileDescriptorProto) (*plugin.
 	}
 
 	presenter := &pythonSrvTemplatePresenter{
-		proto: file,
+		proto:   file,
+		srcInfo: file.GetSourceCodeInfo(),
 
 		Version:        "1.0.0",
 		SourceFilename: file.GetName(),
