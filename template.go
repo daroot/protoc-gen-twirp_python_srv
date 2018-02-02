@@ -415,15 +415,15 @@ class TwirpWSGIApp(object):
 
 {{ range .Services -}}
 class {{ .CamelName }}Impl(object):{{- $comments := (.ServiceComments "    ") -}}
-	{{- if (ne $comments "") }}
-	"""
+    {{- if (ne $comments "") }}
+    """
 {{ $comments }}
     """
-	{{- end -}}
+    {{- end -}}
 {{- range .Methods }}
     def {{ .Name }}(self, {{ .InputArg }}):
-		{{- $comments := (.MethodComments "        ") -}}
-	    {{- if (ne $comments "") }}
+        {{- $comments := (.MethodComments "        ") -}}
+        {{- if (ne $comments "") }}
         """
 {{ $comments }}
         """
