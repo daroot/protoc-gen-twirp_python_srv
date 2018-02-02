@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 
-	"github.com/daroot/protoc-gen-twirp_python_srv/typemap"
+	"github.com/twitchtv/protogen/typemap"
 )
 
 type pythonSrvTemplatePresenter struct {
