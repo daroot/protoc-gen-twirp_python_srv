@@ -3,8 +3,8 @@
 Generate a Python WSGI application that can answer
 [Twirp](https://github.com/twitchtv/twirp) requests.
 
-The design of this generator was taken from [Chris Gaffney's ruby client
-generator](https://github.com/gaffneyc/protoc-gen-twirp_ruby).
+The general design of this generator was taken from [Chris Gaffney's ruby
+client generator](https://github.com/gaffneyc/protoc-gen-twirp_ruby).
 
 ## Install
 

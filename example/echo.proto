@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package example.echo;
+option go_package = "example";
+
+// An echo service
+service Echo {
+   // Repeat the input as output
+   rpc Repeat(EchoRequest) returns (EchoResponse);
+   // Repeat the input multiple times
+   rpc RepeatMultiple(EchoMultiRequest) returns (EchoResponse);
+}
+
+message EchoRequest {
+	string input = 1;
+}
+message EchoMultiRequest {
+	string input = 1;
+	int32 count = 2;
+}
+message EchoResponse {
+	string output = 1;
+}
