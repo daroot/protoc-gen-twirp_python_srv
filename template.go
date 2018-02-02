@@ -328,10 +328,10 @@ class TwirpWSGIApp(object):
                 {"twirp_invalide_route": "POST " + request.path})
 
         ctype = request.headers['Content-Type']
-        if ctype == "application/json":
+        if "json" in ctype:
             decoder = partial(self.json_decoder, data_obj=endpoint.input)
             encoder = partial(self.json_encoder, data_obj=endpoint.output)
-        elif ctype == "application/protobuf":
+        elif "protobuf" in ctype:
             decoder = partial(self.proto_decoder, data_obj=endpoint.input)
             encoder = partial(self.proto_encoder, data_obj=endpoint.output)
         else:
