@@ -39,18 +39,18 @@ import random
 import bjoern
 import haberdasher_pb2 as pb
 from haberdasher_twirp_srv import (Errors, HaberdasherImpl, HaberdasherServer,
-								   TwirpException)
+                                   TwirpException)
 
 class MadHaberdasher(HaberdasherImpl):
-	def MakeHat(self, size):
-		if size.Inches <= 0:
-			raise TwirpException(Errors.InvalidArgument,
-			                     "I can't make a hat that small")
-		return pb.Hat(Size=size.Inches,
-					  Color=random.choice("white", "black", "brown", "red"),
-					  Name=random.choice("bowler", "top hat", "derby"))
+    def MakeHat(self, size):
+        if size.Inches <= 0:
+            raise TwirpException(Errors.InvalidArgument,
+                                 "I can't make a hat that small")
+        return pb.Hat(Size=size.Inches,
+                      Color=random.choice("white", "black", "brown", "red"),
+                      Name=random.choice("bowler", "top hat", "derby"))
 
 if __name__ == "__main__":
-	app = HaberdasherServer(MadHaberdasher())
-	bjoern.run(app, "0.0.0.0", 8080)
+    app = HaberdasherServer(MadHaberdasher())
+    bjoern.run(app, "0.0.0.0", 8080)
 ```
