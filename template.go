@@ -412,8 +412,7 @@ class TwirpWSGIApp(object):
 
         return response(environ, start_response)
 
-
-{{ range .Services -}}
+{{ range .Services }}
 class {{ .CamelName }}Impl(object):{{- $comments := (.ServiceComments "    ") -}}
     {{- if (ne $comments "") }}
     """
@@ -458,5 +457,6 @@ class {{ .CamelName }}Server(TwirpWSGIApp):
             {{- end }}
         }
 
-{{- end }}
+{{ end }}
+{{- /**/ -}}
 `
