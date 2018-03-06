@@ -380,29 +380,26 @@ class TwirpWSGIApp(object):
         return response(environ, start_response)
 
     def handle_error(self, ctx, exc, environ, start_response):
-        raw_err = {
+        err = {
             "type": "Internal",
             "msg": ("There was an error but it could not be "
                     "serialized into JSON"),
+            "meta": {}
         }
         response = Response()
         if isinstance(exc, TwirpException):
-            err = {
-                "code": exc.code.value,
-                "msg": exc.message,
-                "meta": {},
-            }
+            err["code"] = exc.code.value
+            err["msg"] = exc.message
             if exc.meta:
-                err["meta"].update(exc.meta)
-            err["meta"].update(ctx)
+                for k, v in exc.meta.items():
+                    err["meta"][k] = str(v)
             code = exc.code
         else:
-            err = raw_err
-            err["meta"] = {
-                "raw_error": repr(exc),
-            }
-            err["meta"].update(ctx)
+            err["meta"] = {"raw_error": repr(exc)}
             code = Errors.Internal
+
+        for k, v in ctx.items():
+            err["meta"][k] = str(v)
 
         response.status_code = Errors.get_status_code(code)
         try:
