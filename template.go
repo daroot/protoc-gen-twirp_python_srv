@@ -251,6 +251,7 @@ class TwirpException(httplib.HTTPException):
             self.code = Errors.Unknown
         self.message = message
         self.meta = meta
+        super(TwirpException, self).__init__(message)
 
 
 class TwirpWSGIApp(object):
