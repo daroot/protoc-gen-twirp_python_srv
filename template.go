@@ -243,7 +243,7 @@ class Errors(Enum):
         }.get(code, 500)
 
 
-class TwirpException(httplib.HTTPException):
+class TwirpServerException(httplib.HTTPException):
     def __init__(self, code, message, meta={}):
         if isinstance(code, Errors):
             self.code = code
@@ -251,7 +251,7 @@ class TwirpException(httplib.HTTPException):
             self.code = Errors.Unknown
         self.message = message
         self.meta = meta
-        super(TwirpException, self).__init__(message)
+        super(TwirpServerException, self).__init__(message)
 
 
 class TwirpWSGIApp(object):
@@ -285,7 +285,7 @@ class TwirpWSGIApp(object):
     @staticmethod
     def json_encoder(value, data_obj=None):
         if not isinstance(value, data_obj):
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.Internal,
                 ("bad service response type " + str(type(value)) +
                  ", expecting: " + data_obj.DESCRIPTOR.full_name))
@@ -305,7 +305,7 @@ class TwirpWSGIApp(object):
     @staticmethod
     def proto_encoder(value, data_obj=None):
         if not isinstance(value, data_obj):
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.Internal,
                 ("bad service response type " + str(type(value)) +
                  ", expecting: " + data_obj.DESCRIPTOR.full_name))
@@ -317,14 +317,14 @@ class TwirpWSGIApp(object):
     def get_endpoint_methods(self, request):
         (_, url_pre, rpc_method) = request.path.rpartition(self._prefix + "/")
         if not url_pre or not rpc_method:
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.BadRoute, "no handler for path " + request.path,
                 {"twirp_invalid_route": "POST " + request.path},
             )
 
         endpoint = self._endpoints.get(rpc_method, None)
         if not endpoint:
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.Unimplemented, "service has no endpoint " + rpc_method,
                 {"twirp_invalide_route": "POST " + request.path})
 
@@ -336,7 +336,7 @@ class TwirpWSGIApp(object):
             decoder = partial(self.proto_decoder, data_obj=endpoint.input)
             encoder = partial(self.proto_encoder, data_obj=endpoint.output)
         else:
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.BadRoute, "unexpected Content-Type: " + ctype,
                 {"twirp_invalid_route": "POST " + request.path},
             )
@@ -356,7 +356,7 @@ class TwirpWSGIApp(object):
 
         http_method = request.method
         if http_method != "POST":
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.BadRoute,
                 "unsupported method " + http_method + " (only POST is allowed)",
                 {"twirp_invalid_route": http_method + " " + request.path},
@@ -387,7 +387,7 @@ class TwirpWSGIApp(object):
             "meta": {}
         }
         response = Response()
-        if isinstance(exc, TwirpException):
+        if isinstance(exc, TwirpServerException):
             err["code"] = exc.code.value
             err["msg"] = exc.message
             if exc.meta:
@@ -432,7 +432,8 @@ class {{ .CamelName }}Impl(object):{{- $comments := (.ServiceComments "    ") -}
 {{ $comments }}
         """
         {{- end }}
-        raise TwirpException(Errors.Unimplemented, "{{ .Name }} is unimplemented")
+        raise TwirpServerException(Errors.Unimplemented,
+                                   "{{ .Name }} is unimplemented")
 {{ end }}
 
 class {{ .CamelName }}Server(TwirpWSGIApp):
