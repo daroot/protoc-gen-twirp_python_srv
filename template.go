@@ -352,6 +352,7 @@ class TwirpWSGIApp(object):
 
     def handle_request(self, ctx, environ, start_response):
         request = Request(environ)
+        ctx["request"] = request
         self.do_hook(ctx, "request_received")
 
         http_method = request.method
@@ -372,6 +373,7 @@ class TwirpWSGIApp(object):
         input_arg = decode(request)
         result = func(input_arg)
         response = encode(result)
+        ctx["response"] = response
         self.do_hook(ctx, "response_prepared")
 
         ctx["status_code"] = 200
@@ -412,7 +414,8 @@ class TwirpWSGIApp(object):
         # Force json for errors.
         response.headers["Content-Type"] = "application/json"
 
-        ctx['status_code'] = response.status_code
+        ctx["status_code"] = response.status_code
+        ctx["response"] = response
         self.do_hook(ctx, "error")
 
         return response(environ, start_response)
