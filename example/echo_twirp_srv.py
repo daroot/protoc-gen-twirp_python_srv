@@ -64,7 +64,7 @@ class Errors(Enum):
         }.get(code, 500)
 
 
-class TwirpException(httplib.HTTPException):
+class TwirpServerException(httplib.HTTPException):
     def __init__(self, code, message, meta={}):
         if isinstance(code, Errors):
             self.code = code
@@ -72,6 +72,7 @@ class TwirpException(httplib.HTTPException):
             self.code = Errors.Unknown
         self.message = message
         self.meta = meta
+        super(TwirpServerException, self).__init__(message)
 
 
 class TwirpWSGIApp(object):
@@ -105,7 +106,7 @@ class TwirpWSGIApp(object):
     @staticmethod
     def json_encoder(value, data_obj=None):
         if not isinstance(value, data_obj):
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.Internal,
                 ("bad service response type " + str(type(value)) +
                  ", expecting: " + data_obj.DESCRIPTOR.full_name))
@@ -125,7 +126,7 @@ class TwirpWSGIApp(object):
     @staticmethod
     def proto_encoder(value, data_obj=None):
         if not isinstance(value, data_obj):
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.Internal,
                 ("bad service response type " + str(type(value)) +
                  ", expecting: " + data_obj.DESCRIPTOR.full_name))
@@ -137,14 +138,14 @@ class TwirpWSGIApp(object):
     def get_endpoint_methods(self, request):
         (_, url_pre, rpc_method) = request.path.rpartition(self._prefix + "/")
         if not url_pre or not rpc_method:
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.BadRoute, "no handler for path " + request.path,
                 {"twirp_invalid_route": "POST " + request.path},
             )
 
         endpoint = self._endpoints.get(rpc_method, None)
         if not endpoint:
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.Unimplemented, "service has no endpoint " + rpc_method,
                 {"twirp_invalide_route": "POST " + request.path})
 
@@ -156,7 +157,7 @@ class TwirpWSGIApp(object):
             decoder = partial(self.proto_decoder, data_obj=endpoint.input)
             encoder = partial(self.proto_encoder, data_obj=endpoint.output)
         else:
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.BadRoute, "unexpected Content-Type: " + ctype,
                 {"twirp_invalid_route": "POST " + request.path},
             )
@@ -172,11 +173,12 @@ class TwirpWSGIApp(object):
 
     def handle_request(self, ctx, environ, start_response):
         request = Request(environ)
+        ctx["request"] = request
         self.do_hook(ctx, "request_received")
 
         http_method = request.method
         if http_method != "POST":
-            raise TwirpException(
+            raise TwirpServerException(
                 Errors.BadRoute,
                 "unsupported method " + http_method + " (only POST is allowed)",
                 {"twirp_invalid_route": http_method + " " + request.path},
@@ -192,6 +194,7 @@ class TwirpWSGIApp(object):
         input_arg = decode(request)
         result = func(input_arg)
         response = encode(result)
+        ctx["response"] = response
         self.do_hook(ctx, "response_prepared")
 
         ctx["status_code"] = 200
@@ -200,35 +203,41 @@ class TwirpWSGIApp(object):
         return response(environ, start_response)
 
     def handle_error(self, ctx, exc, environ, start_response):
+        base_err = {
+            "type": "Internal",
+            "msg": ("There was an error but it could not be "
+                    "serialized into JSON"),
+            "meta": {}
+        }
         response = Response()
-        if isinstance(exc, TwirpException):
-            err = {
-                "code": exc.code.value,
-                "msg": exc.message,
-                "meta": {},
-            }
-            if exc.meta:
-                err["meta"].update(exc.meta)
-            err["meta"].update(ctx)
-            code = exc.code
-        else:
-            err = {
-                "type": "Internal",
-                "msg": ("There was an error but it could not be "
-                        "serialized into JSON"),
-                "meta": {
-                    "raw_error": repr(exc),
-                },
-            }
-            err["meta"].update(ctx)
-            code = Errors.Internal
+        response.status_code = 500
 
-        response.status_code = Errors.get_status_code(code)
-        response.set_data(json.dumps(err))
+        try:
+            err = base_err
+            if isinstance(exc, TwirpServerException):
+                err["code"] = exc.code.value
+                err["msg"] = exc.message
+                if exc.meta:
+                    for k, v in exc.meta.items():
+                        err["meta"][k] = str(v)
+                response.status_code = Errors.get_status_code(exc.code)
+            else:
+                err["meta"] = {"raw_error": str(exc)}
+
+            for k, v in ctx.items():
+                err["meta"][k] = str(v)
+
+            response.set_data(json.dumps(err))
+        except Exception as e:
+            err = base_err
+            err["meta"] = {"original_error": str(exc), "handling_error": str(e)}
+            response.set_data(json.dumps(err))
+
         # Force json for errors.
         response.headers["Content-Type"] = "application/json"
 
-        ctx['status_code'] = response.status_code
+        ctx["status_code"] = response.status_code
+        ctx["response"] = response
         self.do_hook(ctx, "error")
 
         return response(environ, start_response)
@@ -242,13 +251,15 @@ class EchoImpl(object):
         """
         Repeat the input as output
         """
-        raise TwirpException(Errors.Unimplemented, "Repeat is unimplemented")
+        raise TwirpServerException(Errors.Unimplemented,
+                                   "Repeat is unimplemented")
 
     def RepeatMultiple(self, echo_multi_request):
         """
         Repeat the input multiple times
         """
-        raise TwirpException(Errors.Unimplemented, "RepeatMultiple is unimplemented")
+        raise TwirpServerException(Errors.Unimplemented,
+                                   "RepeatMultiple is unimplemented")
 
 
 class EchoServer(TwirpWSGIApp):
@@ -282,3 +293,4 @@ class EchoServer(TwirpWSGIApp):
                 output=_sym_lookup("example.echo.EchoResponse"),
             ),
         }
+
