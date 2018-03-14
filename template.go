@@ -190,6 +190,7 @@ from collections import namedtuple
 from enum import Enum
 from functools import partial
 
+from blinker import Namespace
 from google.protobuf import json_format
 from google.protobuf import symbol_database as _symbol_database
 from werkzeug.wrappers import Request, Response
@@ -197,6 +198,14 @@ from werkzeug.wrappers import Request, Response
 _sym_lookup = _symbol_database.Default().GetSymbol
 
 Endpoint = namedtuple("Endpoint", ["name", "function", "input", "output"])
+
+_signals = Namespace()
+
+request_received = _signals.signal('request-received')
+request_routed = _signals.signal('request-routed')
+response_prepared = _signals.signal('response-prepared')
+response_sent = _signals.signal('response-sent')
+error_occurred = _signals.signal('error-occurred')
 
 
 class Errors(Enum):
@@ -255,14 +264,13 @@ class TwirpServerException(httplib.HTTPException):
 
 
 class TwirpWSGIApp(object):
-    def __init__(self, service=None, hooks=None):
+    def __init__(self, service=None):
         """Create a basic WSGI App for handling Twirp requests,
         with no endpoints.
 
         Meant to be subclassed by each individual service.
         """
         self.service = None
-        self.hooks = None
         self._endpoints = {}
 
     def __call__(self, environ, start_response):
@@ -343,17 +351,10 @@ class TwirpWSGIApp(object):
 
         return endpoint.name, endpoint.function, decoder, encoder
 
-    def do_hook(self, ctx, hook_name):
-        if not self.hooks:
-            return
-        hook = getattr(self.hooks, hook_name, None)
-        if hook:
-            hook(ctx)
-
     def handle_request(self, ctx, environ, start_response):
         request = Request(environ)
         ctx["request"] = request
-        self.do_hook(ctx, "request_received")
+        request_received.send(ctx)
 
         http_method = request.method
         if http_method != "POST":
@@ -368,16 +369,16 @@ class TwirpWSGIApp(object):
 
         endpoint, func, decode, encode = self.get_endpoint_methods(request)
         ctx["endpoint"] = endpoint
-        self.do_hook(ctx, "request_routed")
+        request_routed.send(ctx)
 
         input_arg = decode(request)
         result = func(input_arg)
         response = encode(result)
         ctx["response"] = response
-        self.do_hook(ctx, "response_prepared")
+        response_prepared.send(ctx)
 
         ctx["status_code"] = 200
-        self.do_hook(ctx, "response_sent")
+        response_sent.send(ctx)
 
         return response(environ, start_response)
 
@@ -417,7 +418,7 @@ class TwirpWSGIApp(object):
 
         ctx["status_code"] = response.status_code
         ctx["response"] = response
-        self.do_hook(ctx, "error")
+        error_occurred.send(ctx)
 
         return response(environ, start_response)
 
@@ -441,17 +442,14 @@ class {{ .CamelName }}Impl(object):{{- $comments := (.ServiceComments "    ") -}
 {{ end }}
 
 class {{ .CamelName }}Server(TwirpWSGIApp):
-    def __init__(self, service, hooks=None):
+    def __init__(self, service):
         """Creates a new WSGI app for the {{ .Name }} service.
 
         Args:
             service: An object with methods matching the protocol of
                 {{ .CamelName }}Impl, which implements the service logic.
-            hooks: Optional object implementing any of the request
-                lifecycle hooks protocol methods.
         """
         self.service = service
-        self.hooks = hooks
 
         self._package_name = "{{ .PackageName }}"
         self._service_name = "{{ .ServiceName }}"
