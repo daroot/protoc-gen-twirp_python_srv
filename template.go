@@ -418,6 +418,7 @@ class TwirpWSGIApp(object):
 
         ctx["status_code"] = response.status_code
         ctx["response"] = response
+        ctx["exception"] = exc
         error_occurred.send(ctx)
 
         return response(environ, start_response)
