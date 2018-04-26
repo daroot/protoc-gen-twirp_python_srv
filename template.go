@@ -186,6 +186,7 @@ except ImportError:
     import httplib
 
 import json
+import sys
 from collections import namedtuple
 from enum import Enum
 from functools import partial
@@ -281,6 +282,7 @@ class TwirpWSGIApp(object):
         try:
             return self.handle_request(ctx, environ, start_response)
         except Exception as e:
+            ctx['exc_info'] = sys.exc_info()
             return self.handle_error(ctx, e, environ, start_response)
 
     @staticmethod
@@ -402,6 +404,8 @@ class TwirpWSGIApp(object):
                         err["meta"][k] = str(v)
                 response.status_code = Errors.get_status_code(exc.code)
             else:
+                err["msg"] = "Internal non-Twirp Error"
+                err["code"] = 500
                 err["meta"] = {"raw_error": str(exc)}
 
             for k, v in ctx.items():
@@ -410,7 +414,8 @@ class TwirpWSGIApp(object):
             response.set_data(json.dumps(err))
         except Exception as e:
             err = base_err
-            err["meta"] = {"original_error": str(exc), "handling_error": str(e)}
+            err["meta"] = {"original_error": str(exc),
+                           "handling_error": str(e)}
             response.set_data(json.dumps(err))
 
         # Force json for errors.
