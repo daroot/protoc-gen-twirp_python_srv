@@ -217,7 +217,7 @@ class Errors(Enum):
     NotFound = "not_found"
     BadRoute = "bad_route"
     AlreadyExists = "already_exists"
-    PermisionDenied = "permission_denied"
+    PermissionDenied = "permission_denied"
     Unauthenticated = "unauthenticated"
     ResourceExhausted = "resource_exhausted"
     FailedPrecondition = "failed_precondition"
