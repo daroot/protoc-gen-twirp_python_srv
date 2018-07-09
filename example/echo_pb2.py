@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -19,6 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='echo.proto',
   package='example.echo',
   syntax='proto3',
+  serialized_options=_b('Z\007example'),
   serialized_pb=_b('\n\necho.proto\x12\x0c\x65xample.echo\"\x1c\n\x0b\x45\x63hoRequest\x12\r\n\x05input\x18\x01 \x01(\t\"0\n\x10\x45\x63hoMultiRequest\x12\r\n\x05input\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\x05\"\x1e\n\x0c\x45\x63hoResponse\x12\x0e\n\x06output\x18\x01 \x01(\t2\x95\x01\n\x04\x45\x63ho\x12?\n\x06Repeat\x12\x19.example.echo.EchoRequest\x1a\x1a.example.echo.EchoResponse\x12L\n\x0eRepeatMultiple\x12\x1e.example.echo.EchoMultiRequest\x1a\x1a.example.echo.EchoResponseB\tZ\x07\x65xampleb\x06proto3')
 )
 
@@ -38,14 +38,14 @@ _ECHOREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -69,21 +69,21 @@ _ECHOMULTIREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='count', full_name='example.echo.EchoMultiRequest.count', index=1,
       number=2, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -107,14 +107,14 @@ _ECHORESPONSE = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -151,15 +151,14 @@ EchoResponse = _reflection.GeneratedProtocolMessageType('EchoResponse', (_messag
 _sym_db.RegisterMessage(EchoResponse)
 
 
-DESCRIPTOR.has_options = True
-DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('Z\007example'))
+DESCRIPTOR._options = None
 
 _ECHO = _descriptor.ServiceDescriptor(
   name='Echo',
   full_name='example.echo.Echo',
   file=DESCRIPTOR,
   index=0,
-  options=None,
+  serialized_options=None,
   serialized_start=141,
   serialized_end=290,
   methods=[
@@ -170,7 +169,7 @@ _ECHO = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_ECHOREQUEST,
     output_type=_ECHORESPONSE,
-    options=None,
+    serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
     name='RepeatMultiple',
@@ -179,7 +178,7 @@ _ECHO = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_ECHOMULTIREQUEST,
     output_type=_ECHORESPONSE,
-    options=None,
+    serialized_options=None,
   ),
 ])
 _sym_db.RegisterServiceDescriptor(_ECHO)

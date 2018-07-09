@@ -5,13 +5,11 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = [
-    "jsonpb",
     "proto",
     "protoc-gen-go/descriptor",
-    "protoc-gen-go/plugin",
-    "ptypes/struct"
+    "protoc-gen-go/plugin"
   ]
-  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
+  revision = "1325a051a2753cd67556b182843b1b693d0854cd"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -25,19 +23,9 @@
   revision = "6f52d8a9e353934b0086955f382c7a1536257125"
   version = "v0.1.0"
 
-[[projects]]
-  name = "github.com/twitchtv/twirp"
-  packages = [
-    ".",
-    "ctxsetters",
-    "internal/contextkeys"
-  ]
-  revision = "125be91eedbde9ffaec9838e5ab7d94ef2760444"
-  version = "v5.2.0"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "68c9e68d1ea038f3cf6394dd5364d70696b017821b276e1e1a735d4aecbb7e83"
+  inputs-digest = "d93eda908f2c441c8cac24f027a37f034c42737ad7597118dfa1c1c27be6b873"
   solver-name = "gps-cdcl"
   solver-version = 1

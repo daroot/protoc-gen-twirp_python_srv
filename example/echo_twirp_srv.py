@@ -7,6 +7,7 @@ except ImportError:
     import httplib
 
 import json
+import sys
 from collections import namedtuple
 from enum import Enum
 from functools import partial
@@ -37,7 +38,7 @@ class Errors(Enum):
     NotFound = "not_found"
     BadRoute = "bad_route"
     AlreadyExists = "already_exists"
-    PermisionDenied = "permission_denied"
+    PermissionDenied = "permission_denied"
     Unauthenticated = "unauthenticated"
     ResourceExhausted = "resource_exhausted"
     FailedPrecondition = "failed_precondition"
@@ -102,6 +103,7 @@ class TwirpWSGIApp(object):
         try:
             return self.handle_request(ctx, environ, start_response)
         except Exception as e:
+            ctx['exc_info'] = sys.exc_info()
             return self.handle_error(ctx, e, environ, start_response)
 
     @staticmethod
@@ -193,7 +195,9 @@ class TwirpWSGIApp(object):
         request_routed.send(ctx)
 
         input_arg = decode(request)
-        result = func(input_arg)
+        ctx["input"] = input_arg
+        result = func(input_arg, ctx=ctx)
+        ctx["output"] = result
         response = encode(result)
         ctx["response"] = response
         response_prepared.send(ctx)
@@ -223,6 +227,8 @@ class TwirpWSGIApp(object):
                         err["meta"][k] = str(v)
                 response.status_code = Errors.get_status_code(exc.code)
             else:
+                err["msg"] = "Internal non-Twirp Error"
+                err["code"] = 500
                 err["meta"] = {"raw_error": str(exc)}
 
             for k, v in ctx.items():
@@ -231,7 +237,8 @@ class TwirpWSGIApp(object):
             response.set_data(json.dumps(err))
         except Exception as e:
             err = base_err
-            err["meta"] = {"original_error": str(exc), "handling_error": str(e)}
+            err["meta"] = {"original_error": str(exc),
+                           "handling_error": str(e)}
             response.set_data(json.dumps(err))
 
         # Force json for errors.
@@ -239,6 +246,7 @@ class TwirpWSGIApp(object):
 
         ctx["status_code"] = response.status_code
         ctx["response"] = response
+        ctx["exception"] = exc
         error_occurred.send(ctx)
 
         return response(environ, start_response)
@@ -248,14 +256,14 @@ class EchoImpl(object):
     """
     An echo service
     """
-    def Repeat(self, echo_request):
+    def Repeat(self, echo_request, ctx={}):
         """
         Repeat the input as output
         """
         raise TwirpServerException(Errors.Unimplemented,
                                    "Repeat is unimplemented")
 
-    def RepeatMultiple(self, echo_multi_request):
+    def RepeatMultiple(self, echo_multi_request, ctx={}):
         """
         Repeat the input multiple times
         """

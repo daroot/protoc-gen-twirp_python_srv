@@ -374,7 +374,9 @@ class TwirpWSGIApp(object):
         request_routed.send(ctx)
 
         input_arg = decode(request)
-        result = func(input_arg)
+        ctx["input"] = input_arg
+        result = func(input_arg, ctx=ctx)
+        ctx["output"] = result
         response = encode(result)
         ctx["response"] = response
         response_prepared.send(ctx)
@@ -436,7 +438,7 @@ class {{ .CamelName }}Impl(object):{{- $comments := (.ServiceComments "    ") -}
     """
     {{- end -}}
 {{- range .Methods }}
-    def {{ .Name }}(self, {{ .InputArg }}):
+    def {{ .Name }}(self, {{ .InputArg }}, ctx={}):
         {{- $comments := (.MethodComments "        ") -}}
         {{- if (ne $comments "") }}
         """
