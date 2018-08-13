@@ -239,7 +239,7 @@ class Errors(Enum):
             Errors.NotFound: 404,
             Errors.BadRoute: 404,
             Errors.AlreadyExists: 409,
-            Errors.PermisionDenied: 403,
+            Errors.PermissionDenied: 403,
             Errors.Unauthenticated: 401,
             Errors.ResourceExhausted: 403,
             Errors.FailedPrecondition: 412,
